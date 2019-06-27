@@ -7,20 +7,15 @@ namespace ssapj.BartenderComBase
 {
     public class BarTenderComBase : IDisposable
     {
-        protected Application _bartenderApplication;
-        protected int _processIdOfBartenderApplication;
-        protected ValueTask _initializationValueTask;
+        protected Application BartenderApplication;
+        protected int ProcessIdOfBartenderApplication;
+        protected ValueTask InitializationValueTask;
 
-        protected BarTenderComBase()
-        {
-            this.StartBartender();
-        }
-
-        protected BarTenderComBase(bool runAsync)
+        protected BarTenderComBase(bool runAsync = false)
         {
             if (runAsync)
             {
-                this._initializationValueTask = this.StartBartenderAsync();
+                this.InitializationValueTask = this.StartBartenderAsync();
             }
             else
             {
@@ -30,8 +25,8 @@ namespace ssapj.BartenderComBase
 
         private void StartBartender()
         {
-            this._bartenderApplication = new Application();
-            this._processIdOfBartenderApplication = this._bartenderApplication.ProcessId;
+            this.BartenderApplication = new Application();
+            this.ProcessIdOfBartenderApplication = this.BartenderApplication.ProcessId;
         }
 
         private async ValueTask StartBartenderAsync()
@@ -49,20 +44,20 @@ namespace ssapj.BartenderComBase
                 return;
             }
 
-            if (this._bartenderApplication != null)
+            if (this.BartenderApplication != null)
             {
                 try
                 {
-                    using (Process.GetProcessById(this._processIdOfBartenderApplication))
+                    using (Process.GetProcessById(this.ProcessIdOfBartenderApplication))
                     {
-                        this._bartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
+                        this.BartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
                     }
                 }
                 finally
                 {
 
-                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this._bartenderApplication);
-                    this._bartenderApplication = null;
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this.BartenderApplication);
+                    this.BartenderApplication = null;
 
                 }
             }
