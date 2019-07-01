@@ -5,76 +5,77 @@ using System.Threading.Tasks;
 
 namespace ssapj.BartenderComBase
 {
-    public class BarTenderComBase : IDisposable
-    {
-        protected Application BartenderApplication;
-        protected int ProcessIdOfBartenderApplication;
-        protected ValueTask InitializationValueTask;
+	public class BartenderComBase : IDisposable
+	{
+		protected Application BartenderApplication;
+		protected int ProcessIdOfBartenderApplication;
+		protected Task InitializationTask;
 
-        protected BarTenderComBase(bool runAsync = false)
-        {
-            if (runAsync)
-            {
-                this.InitializationValueTask = this.StartBartenderAsync();
-            }
-            else
-            {
-                this.StartBartender();
-            }
-        }
+		protected BartenderComBase(bool runAsync = false)
+		{
+			if (runAsync)
+			{
+				this.InitializationTask = this.StartBartenderAsync();
+			}
+			else
+			{
+				this.StartBartender();
+			}
+		}
 
-        private void StartBartender()
-        {
-            this.BartenderApplication = new Application();
-            this.ProcessIdOfBartenderApplication = this.BartenderApplication.ProcessId;
-        }
+		private void StartBartender()
+		{
+			this.BartenderApplication = new Application();
+			this.ProcessIdOfBartenderApplication = this.BartenderApplication.ProcessId;
+		}
 
-        private async ValueTask StartBartenderAsync()
-        {
-            await Task.Run(this.StartBartender).ConfigureAwait(false);
-        }
+		private async Task StartBartenderAsync()
+		{
+			await Task.Run(this.StartBartender).ConfigureAwait(false);
+		}
 
-        #region IDisposable Support
-        private bool _disposedValue;
+		#region IDisposable Support
+		private bool _disposedValue;
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (this._disposedValue)
-            {
-                return;
-            }
+		protected virtual void Dispose(bool disposing)
+		{
+			if (this._disposedValue)
+			{
+				return;
+			}
 
-            if (this.BartenderApplication != null)
-            {
-                try
-                {
-                    using (Process.GetProcessById(this.ProcessIdOfBartenderApplication))
-                    {
-                        this.BartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
-                    }
-                }
-                finally
-                {
+			//wait till BarTender wake up.
+			this.InitializationTask.Wait();
 
-                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this.BartenderApplication);
-                    this.BartenderApplication = null;
+			if (this.BartenderApplication != null)
+			{
+				try
+				{
+					using (Process.GetProcessById(this.ProcessIdOfBartenderApplication))
+					{
+						this.BartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
+					}
+				}
+				finally
+				{
+					System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this.BartenderApplication);
+					this.BartenderApplication = null;
+				}
+			}
 
-                }
-            }
+			this._disposedValue = true;
+		}
 
-            this._disposedValue = true;
-        }
+		~BartenderComBase()
+		{
+			this.Dispose(false);
+		}
 
-        ~BarTenderComBase()
-        {
-            this.Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-    }
+		public void Dispose()
+		{
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+		#endregion
+	}
 }
