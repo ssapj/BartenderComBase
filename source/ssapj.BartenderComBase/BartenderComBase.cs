@@ -45,7 +45,10 @@ namespace ssapj.BartenderComBase
 			}
 
 			//wait till BarTender wake up.
-			this.InitializationTask.Wait();
+			if (this.InitializationTask != null && !this.InitializationTask.IsCompleted)
+			{
+				this.InitializationTask.Wait();
+			}
 
 			if (this.BartenderApplication != null)
 			{
