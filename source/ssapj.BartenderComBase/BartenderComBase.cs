@@ -44,10 +44,18 @@ namespace ssapj.BartenderComBase
 				return;
 			}
 
-			//wait till BarTender wake up.
-			if (this.InitializationTask != null && !this.InitializationTask.IsCompleted)
+			if (disposing)
 			{
-				this.InitializationTask.Wait();
+				//wait till BarTender wake up.
+				if (this.InitializationTask != null)
+				{
+					if (!this.InitializationTask.IsCompleted)
+					{
+						this.InitializationTask.Wait();
+					}
+
+					this.InitializationTask.Dispose();
+				}
 			}
 
 			if (this.BartenderApplication != null)
