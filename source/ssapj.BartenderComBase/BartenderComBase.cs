@@ -1,21 +1,24 @@
 using BarTender;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ssapj.BartenderComBase
 {
 	public class BartenderComBase : IDisposable
 	{
-		protected Application BartenderApplication;
-		protected int ProcessIdOfBartenderApplication;
-		protected Task InitializationTask;
+		private Application _bartenderApplication;
+		private readonly Task _initializationTask;
+		private readonly bool _runAsync;
 
 		protected BartenderComBase(bool runAsync = false)
 		{
+			this._runAsync = runAsync;
+
 			if (runAsync)
 			{
-				this.InitializationTask = this.StartBartenderAsync();
+				this._initializationTask = this.StartBartenderAsync();
 			}
 			else
 			{
@@ -25,13 +28,41 @@ namespace ssapj.BartenderComBase
 
 		private void StartBartender()
 		{
-			this.BartenderApplication = new Application();
-			this.ProcessIdOfBartenderApplication = this.BartenderApplication.ProcessId;
+			this._bartenderApplication = new Application();
 		}
 
 		private async Task StartBartenderAsync()
 		{
 			await Task.Run(this.StartBartender).ConfigureAwait(false);
+		}
+
+		protected async ValueTask<Application> GetBartenderApplicationAsync()
+		{
+			if (!this._runAsync || this._initializationTask.IsCompleted)
+			{
+				return this._bartenderApplication;
+			}
+
+			switch (this._initializationTask.Status)
+			{
+				case TaskStatus.Created:
+				case TaskStatus.WaitingForActivation:
+				case TaskStatus.WaitingToRun:
+				case TaskStatus.Running:
+				case TaskStatus.WaitingForChildrenToComplete:
+					await this._initializationTask.ConfigureAwait(false);
+					break;
+				case TaskStatus.RanToCompletion:
+					break;
+				case TaskStatus.Canceled:
+					throw new TaskCanceledException();
+				case TaskStatus.Faulted:
+					throw new Exception();
+				default:
+					break;
+			}
+
+			return this._bartenderApplication;
 		}
 
 		#region IDisposable Support
@@ -46,32 +77,42 @@ namespace ssapj.BartenderComBase
 
 			if (disposing)
 			{
-				//wait till BarTender wake up.
-				if (this.InitializationTask != null)
+				if (this._runAsync)
 				{
-					if (!this.InitializationTask.IsCompleted)
+					//wait till BarTender wake up.
+					switch (this._initializationTask.Status)
 					{
-						this.InitializationTask.Wait();
+						case TaskStatus.Created:
+						case TaskStatus.WaitingForActivation:
+						case TaskStatus.WaitingToRun:
+						case TaskStatus.Running:
+						case TaskStatus.WaitingForChildrenToComplete:
+							this._initializationTask.Wait();
+							break;
+						case TaskStatus.RanToCompletion:
+						case TaskStatus.Canceled:
+						case TaskStatus.Faulted:
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
 					}
 
-					this.InitializationTask.Dispose();
+					this._initializationTask.Dispose();
 				}
+
 			}
 
-			if (this.BartenderApplication != null)
+			if (this._bartenderApplication != null)
 			{
-				try
+				var processes = Process.GetProcesses();
+
+				if (processes.Any(x => x.Id == this._bartenderApplication.ProcessId))
 				{
-					using (Process.GetProcessById(this.ProcessIdOfBartenderApplication))
-					{
-						this.BartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
-					}
+					this._bartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
 				}
-				finally
-				{
-					System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this.BartenderApplication);
-					this.BartenderApplication = null;
-				}
+
+				System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this._bartenderApplication);
+				this._bartenderApplication = null;
 			}
 
 			this._disposedValue = true;
