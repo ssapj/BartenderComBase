@@ -1,4 +1,4 @@
-using BarTender;
+﻿using BarTender;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace ssapj.BartenderComBase
 {
-	public class BartenderComBase : IDisposable
-	{
+    public class BartenderComBase : IDisposable
+    {
 		private Application _bartenderApplication;
 		private readonly Task _initializationTask;
 		private readonly bool _runAsync;
@@ -92,9 +92,8 @@ namespace ssapj.BartenderComBase
 						case TaskStatus.RanToCompletion:
 						case TaskStatus.Canceled:
 						case TaskStatus.Faulted:
-							break;
 						default:
-							throw new ArgumentOutOfRangeException();
+							break;
 					}
 
 					this._initializationTask.Dispose();
@@ -130,4 +129,5 @@ namespace ssapj.BartenderComBase
 		}
 		#endregion
 	}
+
 }
