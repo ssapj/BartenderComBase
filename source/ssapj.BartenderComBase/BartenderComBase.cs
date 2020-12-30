@@ -1,8 +1,10 @@
-using BarTender;
+﻿using BarTender;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace ssapj.BartenderComBase
 {
@@ -11,14 +13,17 @@ namespace ssapj.BartenderComBase
 		private Application _bartenderApplication;
 		private readonly Task _initializationTask;
 		private readonly bool _runAsync;
+		private readonly CancellationToken _token;
+		private bool _isInitializing;
 
-		protected BartenderComBase(bool runAsync = false)
+		protected BartenderComBase(bool runAsync = false, CancellationToken token = default)
 		{
 			this._runAsync = runAsync;
 
 			if (runAsync)
 			{
-				this._initializationTask = this.StartBartenderAsync();
+				this._token = token;
+				this._initializationTask = this.StartBartenderAsync(this._token);
 			}
 			else
 			{
@@ -28,16 +33,38 @@ namespace ssapj.BartenderComBase
 
 		private void StartBartender()
 		{
+			this._isInitializing = true;
 			this._bartenderApplication = new Application();
+			this._isInitializing = false;
 		}
 
-		private async Task StartBartenderAsync()
+		private async Task StartBartenderAsync(CancellationToken token = default)
 		{
-			await Task.Run(this.StartBartender).ConfigureAwait(false);
+			try
+			{
+				await Task.Run(() =>
+				{
+					try
+					{
+						token.ThrowIfCancellationRequested();
+						this.StartBartender();
+					}
+					catch
+					{
+						throw;
+					}
+				}, token).ConfigureAwait(false);
+			}
+			catch
+			{
+				throw;
+			}
 		}
 
-		protected async ValueTask<Application> GetBartenderApplicationAsync()
+		protected async Task<Application> GetBartenderApplicationAsync()
 		{
+			this._token.ThrowIfCancellationRequested();
+
 			if (!this._runAsync || this._initializationTask.IsCompleted)
 			{
 				return this._bartenderApplication;
@@ -77,7 +104,7 @@ namespace ssapj.BartenderComBase
 
 			if (disposing)
 			{
-				if (this._runAsync)
+				if (this._runAsync && !this._token.IsCancellationRequested)
 				{
 					//wait till BarTender wake up.
 					switch (this._initializationTask.Status)
@@ -92,6 +119,7 @@ namespace ssapj.BartenderComBase
 						case TaskStatus.RanToCompletion:
 						case TaskStatus.Canceled:
 						case TaskStatus.Faulted:
+							break;
 						default:
 							break;
 					}
@@ -99,6 +127,11 @@ namespace ssapj.BartenderComBase
 					this._initializationTask.Dispose();
 				}
 
+			}
+
+			while (this._isInitializing)
+			{
+				Task.Delay(10);
 			}
 
 			if (this._bartenderApplication != null)
@@ -110,7 +143,7 @@ namespace ssapj.BartenderComBase
 					this._bartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
 				}
 
-				System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this._bartenderApplication);
+				_ = Marshal.FinalReleaseComObject(this._bartenderApplication);
 				this._bartenderApplication = null;
 			}
 
@@ -131,4 +164,3 @@ namespace ssapj.BartenderComBase
 	}
 
 }
-
