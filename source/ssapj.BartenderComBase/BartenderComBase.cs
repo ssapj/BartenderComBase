@@ -34,6 +34,14 @@ namespace ssapj.BartenderComBase
 
 				if (processes.Any(x => x.Id == this._bartenderApplication.ProcessId))
 				{
+					if (this._bartenderApplication.Formats.Count != 0)
+					{
+						foreach (Format format in this._bartenderApplication.Formats)
+						{
+							format.Close(BtSaveOptions.btDoNotSaveChanges);
+						}
+					}
+
 					this._bartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
 				}
 
