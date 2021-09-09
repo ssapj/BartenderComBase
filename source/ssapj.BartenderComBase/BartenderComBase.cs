@@ -9,7 +9,7 @@ namespace ssapj.BartenderComBase
 	public class BartenderComBase : IDisposable
 	{
 		private Application _bartenderApplication;
-		public Application BartenderApplication => this._bartenderApplication;
+		protected Application BartenderApplication => this._bartenderApplication;
 
 		protected BartenderComBase()
 		{
