@@ -1,37 +1,33 @@
 using BarTender;
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ssapj.BartenderComBase
 {
-	public class BartenderComBase : IDisposable
+	public partial class BartenderComBase : IDisposable
 	{
-		protected Application BartenderApplication;
-		protected int ProcessIdOfBartenderApplication;
-		protected Task InitializationTask;
+		private Application _bartenderApplication;
+		private int _bartenderProcessId;
 
-		protected BartenderComBase(bool runAsync = false)
+		protected Application BartenderInstance
 		{
-			if (runAsync)
+			get
 			{
-				this.InitializationTask = this.StartBartenderAsync();
-			}
-			else
-			{
-				this.StartBartender();
+				if (this._bartenderApplication is null)
+				{
+					StartBartender();
+				}
+
+				return this._bartenderApplication;
 			}
 		}
 
 		private void StartBartender()
 		{
-			this.BartenderApplication = new Application();
-			this.ProcessIdOfBartenderApplication = this.BartenderApplication.ProcessId;
-		}
-
-		private async Task StartBartenderAsync()
-		{
-			await Task.Run(this.StartBartender).ConfigureAwait(false);
+			this._bartenderApplication ??= new Application();
+			this._bartenderProcessId = this._bartenderApplication.ProcessId;
 		}
 
 		#region IDisposable Support
@@ -46,32 +42,19 @@ namespace ssapj.BartenderComBase
 
 			if (disposing)
 			{
-				//wait till BarTender wake up.
-				if (this.InitializationTask != null)
-				{
-					if (!this.InitializationTask.IsCompleted)
-					{
-						this.InitializationTask.Wait();
-					}
-
-					this.InitializationTask.Dispose();
-				}
 			}
 
-			if (this.BartenderApplication != null)
+			if (this._bartenderApplication != null)
 			{
-				try
+				var processes = Process.GetProcesses();
+
+				if (processes.Any(x => x.Id == this._bartenderProcessId))
 				{
-					using (Process.GetProcessById(this.ProcessIdOfBartenderApplication))
-					{
-						this.BartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
-					}
+					this._bartenderApplication.Quit(BtSaveOptions.btDoNotSaveChanges);
 				}
-				finally
-				{
-					System.Runtime.InteropServices.Marshal.FinalReleaseComObject(this.BartenderApplication);
-					this.BartenderApplication = null;
-				}
+
+				_ = Marshal.FinalReleaseComObject(this._bartenderApplication);
+				this._bartenderApplication = null;
 			}
 
 			this._disposedValue = true;
@@ -89,4 +72,5 @@ namespace ssapj.BartenderComBase
 		}
 		#endregion
 	}
+
 }
