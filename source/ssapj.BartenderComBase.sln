@@ -5,8 +5,6 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ssapj.BartenderComBase", "ssapj.BartenderComBase\ssapj.BartenderComBase.csproj", "{9AE34EE9-4B82-4095-8D01-5985702274A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{FF5E7270-0130-40E2-9CE7-402668BC172B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -17,9 +15,6 @@ Global
 		{9AE34EE9-4B82-4095-8D01-5985702274A6}.Debug|x64.Build.0 = Debug|x64
 		{9AE34EE9-4B82-4095-8D01-5985702274A6}.Release|x64.ActiveCfg = Release|x64
 		{9AE34EE9-4B82-4095-8D01-5985702274A6}.Release|x64.Build.0 = Release|x64
-		{FF5E7270-0130-40E2-9CE7-402668BC172B}.Debug|x64.ActiveCfg = Debug|x64
-		{FF5E7270-0130-40E2-9CE7-402668BC172B}.Debug|x64.Build.0 = Debug|x64
-		{FF5E7270-0130-40E2-9CE7-402668BC172B}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
